@@ -34,7 +34,7 @@ module Druid
       @properties[:queryType] = type
       self
     end
-    
+
     def get_query_type()
       @properties[:queryType] || :groupBy
     end
@@ -63,7 +63,7 @@ module Druid
       @properties[:threshold] = threshold
       self
     end
-    
+
     def time_series(*aggregations)
       query_type(:timeseries)
       #@properties[:aggregations] = aggregations.flatten
@@ -89,6 +89,35 @@ module Druid
 
         self
       end
+    end
+
+    def min(*metrics)
+      query_type(get_query_type())
+      @properties[:aggregations] = [] if @properties[:aggregations].nil?
+      metrics.flatten.each do |metric|
+        @properties[:aggregations] << {
+          :type => 'min',
+          :name => metric.to_s,
+          :fieldName => metric.to_s
+        } unless contains_aggregation?(metric)
+      end
+
+      self
+    end
+
+    def select(dimensions = [], metrics = [], opts = {})
+      query_type(:select)
+      limit = opts[:limit] || 1000
+      page_token = opts[:page_token] || {}
+
+      @properties[:dimensions] = dimensions.flatten
+      @properties[:metrics] = metrics.flatten
+      @properties[:pagingSpec] = {
+        :pagingIdentifiers => page_token,
+        :threshold => limit
+      }
+
+      self
     end
 
     alias_method :sum, :long_sum
@@ -181,18 +210,39 @@ module Druid
       self
     end
 
+    def duration_granularity(duration_msec, time_zone = nil)
+      time_zone ||= Time.now.strftime('%Z')
+      @properties[:granularity] = {
+        :type => 'duration',
+        :duration => duration_msec,
+        :timeZone => time_zone
+      }
+      self
+    end
+
+    def distinct_count(dimensions)
+      dimensions.each do |dimension|
+        @properties[:aggregations] << {
+          :type => "hyperUnique",
+          :name => dimension.to_s,
+          :fieldName => dimension
+        }
+      end
+      self
+    end
+
     def to_json
       @properties.to_json
     end
 
-   def limit_spec(limit, columns)
+    def limit_spec(limit, columns)
       @properties[:limitSpec] = {
         :type => :default,
         :limit => limit,
         :columns => order_by_column_spec(columns)
       }
       self
-    end 
+    end
 
     private
 
