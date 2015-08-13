@@ -105,6 +105,20 @@ module Druid
       self
     end
 
+    def max(*metrics)
+      query_type(get_query_type())
+      @properties[:aggregations] = [] if @properties[:aggregations].nil?
+      metrics.flatten.each do |metric|
+        @properties[:aggregations] << {
+            :type => 'max',
+            :name => metric.to_s,
+            :fieldName => metric.to_s
+        } unless contains_aggregation?(metric)
+      end
+
+      self
+    end
+
     def select(dimensions = [], metrics = [], opts = {})
       query_type(:select)
       limit = opts[:limit] || 1000
