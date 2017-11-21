@@ -212,6 +212,13 @@ describe Druid::Query do
     JSON.parse(@query.to_json)['intervals'].should == ["#{a.iso8601}/#{b.iso8601}"]
   end
 
+  it 'treat integers as relative to today' do
+    a = Time.now.to_date.to_time
+    b = Time.now.to_date.to_time + 1
+    @query.interval(0, 1)
+    JSON.parse(@query.to_json)['intervals'].should == ["#{a.iso8601}/#{b.iso8601}"]
+  end
+
   it 'takes a granularity from string' do
     @query.granularity('all')
     JSON.parse(@query.to_json)['granularity'].should == 'all'
