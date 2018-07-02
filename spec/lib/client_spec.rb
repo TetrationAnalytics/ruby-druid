@@ -1,18 +1,21 @@
 describe Druid::Client do
 
-  it 'calls zookeeper on intialize' do
-    Druid::ZooHandler.should_receive(:new)
-    Druid::Client.new('test_uri', zk_keepalive: true)
+  it 'validates URI on intialize' do
+    expect { Druid::Client.new('test_uri\abc') }.to raise_error(StandardError, /Invalid broker url/)
+  end
+
+  it 'broker_uri returns broker URI object' do
+    client = Druid::Client.new('test_uri')
+    expect(client.broker_uri).to be_a URI
+    expect(client.broker_uri.to_s).to eq 'test_uri'
   end
 
   it 'creates a query' do
-    Druid::ZooHandler.stub(:new).and_return(double(Druid::ZooHandler, :data_sources => {'test/test' => 'http://www.example.com'}, :close! => true))
-    Druid::Client.new('test_uri', zk_keepalive: true).query('test/test').should be_a Druid::Query
+    Druid::Client.new('test_uri').query('test/test').should be_a Druid::Query
   end
 
   it 'sends query if block is given' do
-    Druid::ZooHandler.stub(:new).and_return(double(Druid::ZooHandler, :data_sources => {'test/test' => 'http://www.example.com'}, :close! => true))
-    client = Druid::Client.new('test_uri', zk_keepalive: true)
+    client = Druid::Client.new('test_uri')
     client.should_receive(:send)
     client.query('test/test') do
       group(:group1)
@@ -24,8 +27,8 @@ describe Druid::Client do
       with(:body => "{\"dataSource\":\"test\",\"granularity\":\"all\",\"intervals\":[\"2013-04-04T00:00:00+00:00/2013-04-04T00:00:00+00:00\"]}",
       :headers => {'Accept'=>'*/*', 'Content-Type'=>'application/json', 'User-Agent'=>'Ruby'}).
       to_return(:status => 200, :body => "[]", :headers => {})
-    Druid::ZooHandler.stub(:new).and_return(double(Druid::ZooHandler, :data_sources => {'test/test' => 'http://www.example.com/druid/v2'}, :close! => true))
-    client = Druid::Client.new('test_uri', zk_keepalive: true)
+
+    client = Druid::Client.new('http://www.example.com/druid/v2')
     JSON.should_receive(:parse).and_return([])
     client.send(client.query('test/test').interval("2013-04-04", "2013-04-04"))
   end
@@ -35,15 +38,19 @@ describe Druid::Client do
       with(:body => "{\"dataSource\":\"test\",\"granularity\":\"all\",\"intervals\":[\"2013-04-04T00:00:00+00:00/2013-04-04T00:00:00+00:00\"]}",
       :headers => {'Accept'=>'*/*', 'Content-Type'=>'application/json', 'User-Agent'=>'Ruby'}).
       to_return(:status => 666, :body => "Strange server error", :headers => {})
-    Druid::ZooHandler.stub(:new).and_return(double(Druid::ZooHandler, :data_sources => {'test/test' => 'http://www.example.com/druid/v2'}, :close! => true))
-    client = Druid::Client.new('test_uri', zk_keepalive: true)
+
+    client = Druid::Client.new('http://www.example.com/druid/v2')
     expect { client.send(client.query('test/test').interval("2013-04-04", "2013-04-04")) }.to raise_error(RuntimeError, /Request failed: 666: Strange server error/)
   end
 
-  it 'should have a static setup' do
-    client = Druid::Client.new('test_uri', :static_setup => {'madvertise/mock' => 'mock_uri'})
-    client.data_sources.should == ['madvertise/mock']
-    client.data_source_uri('madvertise/mock').should == URI('mock_uri')
+
+  it 'should report list of all data sources correctly' do
+    stub_request(:get, "http://www.example.com/druid/v2/datasources").
+      with(:headers =>{'Accept'=>'*/*', 'User-Agent'=>'Ruby'}).
+      to_return(:status => 200, :body => '["ds_1","ds_2","ds_3"]')
+
+    client = Druid::Client.new('http://www.example.com/druid/v2/')
+    expect(client.data_sources).to eq ["ds_1","ds_2","ds_3"]
   end
 
   it 'should report dimensions of a data source correctly' do
@@ -51,7 +58,7 @@ describe Druid::Client do
       with(:headers =>{'Accept'=>'*/*', 'User-Agent'=>'Ruby'}).
       to_return(:status => 200, :body => '{"dimensions":["d1","d2","d3"],"metrics":["m1", "m2"]}')
 
-    client = Druid::Client.new('test_uri', :static_setup => {'madvertise/mock' => 'http://www.example.com/druid/v2/'})
+    client = Druid::Client.new('http://www.example.com/druid/v2/')
     client.data_source('madvertise/mock').dimensions.should == ["d1","d2","d3"]
   end
 
@@ -60,7 +67,7 @@ describe Druid::Client do
       with(:headers =>{'Accept'=>'*/*', 'User-Agent'=>'Ruby'}).
       to_return(:status => 200, :body => '{"dimensions":["d1","d2","d3"],"metrics":["m1", "m2"]}')
 
-    client = Druid::Client.new('test_uri', :static_setup => {'madvertise/mock' => 'http://www.example.com/druid/v2/'})
+    client = Druid::Client.new('http://www.example.com/druid/v2/')
     client.data_source('madvertise/mock').metrics.should == ["m1","m2"]
   end
 
