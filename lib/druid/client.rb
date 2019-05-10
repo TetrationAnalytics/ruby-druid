@@ -10,7 +10,7 @@ module Druid
     end
 
     def send(query)
-      uri = broker_uri
+      uri = broker_uri(query)
 
       req = Net::HTTP::Post.new(uri.path, {'Content-Type' =>'application/json'})
       req.body = query.to_json
@@ -53,7 +53,8 @@ module Druid
       end
     end
 
-    def broker_uri
+    # H4Druid::Client#broker_uri needs query to be passed to it.
+    def broker_uri(_query = nil)
       URI(@broker_url) if @broker_url
     rescue
       nil

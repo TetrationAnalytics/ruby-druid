@@ -33,6 +33,21 @@ describe Druid::Client do
     client.send(client.query('test/test').interval("2013-04-04", "2013-04-04"))
   end
 
+  it 'passes query to broker_uri' do
+    stub_request(:post, 'http://www.example.com/druid/v2')
+      .with(body: '{"dataSource":"test","granularity":"all","intervals":["2013-04-04T00:00:00+00:00/2013-04-04T00:00:00+00:00"]}',
+            headers: { 'Accept' => '*/*', 'Content-Type' => 'application/json', 'User-Agent' => 'Ruby' })
+      .to_return(status: 200, body: '[]', headers: {})
+
+    client = Druid::Client.new('http://www.example.com/druid/v2')
+    query = client.query('test/test').interval('2013-04-04', '2013-04-04')
+
+    JSON.should_receive(:parse).and_return([])
+    client.should_receive(:broker_uri).with(query).and_call_original
+
+    client.send(query)
+  end
+
   it 'raises on request failure' do
     stub_request(:post, "http://www.example.com/druid/v2").
       with(:body => "{\"dataSource\":\"test\",\"granularity\":\"all\",\"intervals\":[\"2013-04-04T00:00:00+00:00/2013-04-04T00:00:00+00:00\"]}",
