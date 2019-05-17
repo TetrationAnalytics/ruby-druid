@@ -1,3 +1,5 @@
+require 'request_store'
+
 module Druid
   class Client
     X_REQUEST_ID = 'X-Request-Id'.freeze

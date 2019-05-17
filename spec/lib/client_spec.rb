@@ -3,8 +3,6 @@ describe Druid::Client do
   let(:ilb_request_id) { 'ilb-1234' }
 
   before do
-    RequestStore = class_double("RequestStore").
-      as_stubbed_const(:transfer_nested_constants => true)
     allow(RequestStore).to receive(:store)
       .and_return(h4_request_id: h4_request_id, ilb_request_id: ilb_request_id)
   end
