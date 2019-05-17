@@ -1,5 +1,7 @@
 module Druid
   class Client
+    X_REQUEST_ID = 'X-Request-Id'.freeze
+    X_ILB_REQUEST_ID = 'X-ILB-Request-Id'.freeze
 
     def initialize(broker_url, opts = nil)
       opts ||= {}
@@ -12,7 +14,14 @@ module Druid
     def send(query)
       uri = broker_uri(query)
 
-      req = Net::HTTP::Post.new(uri.path, {'Content-Type' =>'application/json'})
+      headers = {}
+      headers[X_REQUEST_ID] = RequestStore.store[:h4_request_id] if
+        RequestStore.store[:h4_request_id]
+      headers[X_ILB_REQUEST_ID] = RequestStore.store[:ilb_request_id] if
+        RequestStore.store[:ilb_request_id]
+      headers['Content-Type'] = 'application/json'
+
+      req = Net::HTTP::Post.new(uri.path, headers)
       req.body = query.to_json
 
       response = Net::HTTP.new(uri.host, uri.port).start do |http|

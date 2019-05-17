@@ -1,4 +1,13 @@
 describe Druid::Client do
+  let(:h4_request_id) { 'lb-1234' }
+  let(:ilb_request_id) { 'ilb-1234' }
+
+  before do
+    RequestStore = class_double("RequestStore").
+      as_stubbed_const(:transfer_nested_constants => true)
+    allow(RequestStore).to receive(:store)
+      .and_return(h4_request_id: h4_request_id, ilb_request_id: ilb_request_id)
+  end
 
   it 'validates URI on intialize' do
     expect { Druid::Client.new('test_uri\abc') }.to raise_error(StandardError, /Invalid broker url/)
@@ -33,10 +42,14 @@ describe Druid::Client do
     client.send(client.query('test/test').interval("2013-04-04", "2013-04-04"))
   end
 
-  it 'passes query to broker_uri' do
-    stub_request(:post, 'http://www.example.com/druid/v2')
+  it 'passes query to broker_uri with expected headers' do
+    stub = stub_request(:post, 'http://www.example.com/druid/v2')
       .with(body: '{"dataSource":"test","granularity":"all","intervals":["2013-04-04T00:00:00+00:00/2013-04-04T00:00:00+00:00"]}',
-            headers: { 'Accept' => '*/*', 'Content-Type' => 'application/json', 'User-Agent' => 'Ruby' })
+            headers: { 'Accept' => '*/*',
+                       'Content-Type' => 'application/json',
+                       'User-Agent'=>'Ruby',
+                       described_class::X_ILB_REQUEST_ID=> ilb_request_id,
+                       described_class::X_REQUEST_ID=> h4_request_id})
       .to_return(status: 200, body: '[]', headers: {})
 
     client = Druid::Client.new('http://www.example.com/druid/v2')
@@ -46,6 +59,7 @@ describe Druid::Client do
     client.should_receive(:broker_uri).with(query).and_call_original
 
     client.send(query)
+    expect(stub).to have_been_requested
   end
 
   it 'raises on request failure' do
