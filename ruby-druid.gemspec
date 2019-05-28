@@ -1,13 +1,13 @@
 # coding: utf-8
 
 Gem::Specification.new do |spec|
-  spec.name          = "ruby-druid"
+  spec.name          = "h4-ruby-druid"
   spec.version       = "0.1.11"
   spec.authors       = ["LiquidM, Inc."]
   spec.email         = ["opensource@liquidm.com"]
   spec.summary       = %q{Ruby client for metamx druid}
   spec.description   = %q{Ruby client for metamx druid}
-  spec.homepage      = "https://github.com/liquidm/ruby-druid"
+  spec.homepage      = "https://github.com/TetrationAnalytics/ruby-druid"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files`.split($/)
