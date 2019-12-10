@@ -3,13 +3,8 @@
 require 'bundler/setup'
 require 'liquid/boot'
 
-def zookeeper(value)
-  @zk_uri = value
-end
-
 def uri(value)
-  puts "using 'uri' in the config is deprecated, use 'zookeeper' instead"
-  zookeeper value
+  @uri = value
 end
 
 def source(value)
@@ -21,18 +16,18 @@ def options(value)
 end
 
 begin
-  driplrc = File.read(File.join(File.expand_path("../..", __FILE__), '.driplrc'))
+  driplrc = File.read(File.join(File.expand_path('..', __dir__), '.driplrc'))
 rescue
-  puts "You need to create a .driplrc, take a look at dot_driplrc_example"
+  puts 'You need to create a .driplrc, take a look at dot_driplrc_example'
   exit 1
 end
 
 instance_eval(driplrc)
 
-unless @zk_uri || (@options && @options[:static_setup])
-  puts "Your .driplrc is incomplete, please fix"
+unless @uri
+  puts 'Your .driplrc is incomplete, please fix'
   exit 1
 end
 
 require 'druid/console'
-Druid::Console.new(@zk_uri, @source, @options)
+Druid::Console.new(@uri, @source, @options)

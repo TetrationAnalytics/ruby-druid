@@ -6,16 +6,11 @@ ruby-druid features a [Squeel](https://github.com/ernie/squeel)-like query DSL
 and generates a JSON query that can be sent to druid directly. A console for
 testing is also provided.
 
-[![Gem Version](https://badge.fury.io/rb/ruby-druid.png)](http://badge.fury.io/rb/ruby-druid)
-[![Build Status](https://travis-ci.org/liquidm/ruby-druid.png)](https://travis-ci.org/liquidm/ruby-druid)
-[![Code Climate](https://codeclimate.com/github/liquidm/ruby-druid.png)](https://codeclimate.com/github/liquidm/ruby-druid)
-[![Dependency Status](https://gemnasium.com/liquidm/ruby-druid.png)](https://gemnasium.com/liquidm/ruby-druid)
-
 ## Installation
 
 Add this line to your application's Gemfile:
 
-    gem 'ruby-druid'
+    gem 'h4-ruby-druid'
 
 And then execute:
 
@@ -23,12 +18,12 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install ruby-druid
+    $ gem install h4-ruby-druid
 
 ## Usage
 
 ```ruby
-Druid::Client.new('zk1:2181,zk2:2181/druid').query('service/source')
+Druid::Client.new('http://www.example.com/druid/v2').query('service/source')
 ```
 
 returns a query object on which all other methods can be called to create a
@@ -37,7 +32,7 @@ full and valid druid query.
 A query object can be sent like this:
 
 ```ruby
-client = Druid::Client.new('zk1:2181,zk2:2181/druid')
+client = Druid::Client.new('http://www.example.com/druid/v2')
 query = Druid::Query.new('service/source')
 client.send(query)
 ```
@@ -51,11 +46,10 @@ each row.  The timestamp by can be received by a method with the same name
 An options hash can be passed when creating `Druid::Client` instance:
 
 ```ruby
-client = Druid::Client.new('zk1:2181,zk2:2181/druid', http_timeout: 20)
+client = Druid::Client.new('http://www.example.com/druid/v2', http_timeout: 20)
 ```
 
 Supported options are:
-* `static_setup` to explicitly specify a broker url, e.g. `static_setup: { 'my/source_name' => 'http://1.2.3.4:8080/druid/v2/' }`
 * `http_timeout` to define a timeout for sending http queries to a broker (in minutes, default value is 2)
 
 ### GroupBy
